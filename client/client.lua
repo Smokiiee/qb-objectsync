@@ -165,7 +165,7 @@ AddEventHandler("synccrate:client:showTarget", function(crate)
 			{           
 				num = 2,
 				type = 'client',
-				icon = "fa-solid fa-magnifying-glass",
+				icon = "fa-solid fa-trash-can",
 				label = 'Remove Create ',
 				canInteract = function() return CrateUser() end, -- Only show this option if the player has access
 				action = function(crate)
