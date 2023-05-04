@@ -36,6 +36,12 @@ RegisterCommand("cratemrdka", function(source, args)
     end
 end)
 
+Citizen.CreateThread(function()
+    TriggerEvent('chat:addSuggestion', '/cratemrdka', 'Create an object to spawn of your choosing ', {
+      {name="Model Hash", help="Model Hash"},
+    })
+end)
+
 RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
     if GetVehiclePedIsIn(PlayerPedId(), false) ~= 0 then return end
     if CratePlace then return end
