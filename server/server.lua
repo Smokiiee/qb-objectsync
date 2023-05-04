@@ -1,8 +1,9 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+print("Server is loaded")
+
 RegisterServerEvent('synccrate')
 AddEventHandler('synccrate', function(crate)
-    print("Server Side")
     TriggerClientEvent('synccrate:client', -1, crate)
 end)
 
@@ -14,7 +15,7 @@ RegisterNetEvent("synccrate:server:removeTarget", function(crate)
     TriggerClientEvent('synccrate:client:removeTarget', -1, crate)
 end)
 
-RegisterNetEvent('synccrate:server:CrateItem'', function(type)
+RegisterNetEvent('synccrate:server:CrateItem', function(type)
     local src = source
     local player = QBCore.Functions.GetPlayer(src)
     local bags = math.random(2, 4)
@@ -28,17 +29,18 @@ RegisterNetEvent('synccrate:server:CrateItem'', function(type)
     player.Functions.AddItem('rifle_ammo', bags, false)
 end)
 
-RegisterNetEvent('synccrate:server:RegisterCommand', function()
+RegisterNetEvent('synccrate:server:RegisterCommand', function(ModelHash)
     local src = source
-    TriggerClientEvent("synccrate:client:PlaceCreate", source)
+    local Player = QBCore.Functions.GetPlayer(src)
+    if not QBCore.Functions.HasPermission(src, 'admin') then return end
+    TriggerClientEvent("synccrate:client:PlaceCreate", src, ModelHash)
 end)
 
 
-RegisterNetEvent('synccrate:server:CreateNewCrate', function(coords, heading, crate)
+RegisterNetEvent('synccrate:server:CreateNewCrate', function(coords, heading, crate, ModelHash)
     local src = source
     local Player = QBCore.Functions.GetPlayer(src)
     if not Player then return end
-    if #(GetEntityCoords(GetPlayerPed(src)) - coords) > Config.rayCastingDistance + 10 then return end    
-    -- print("CreateNewPlant",coords, crate)
-    TriggerClientEvent('synccrate:client', -1, coords, heading, crate)
+    if #(GetEntityCoords(GetPlayerPed(src)) - coords) > Config.rayCastingDistance + 10 then return end 
+    TriggerClientEvent('synccrate:client', -1, coords, heading, crate, ModelHash)
 end)

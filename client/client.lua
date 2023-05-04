@@ -29,16 +29,17 @@ function CheckSurface()
 end
 
 -- Spawn a crate object and sync it to the server
-RegisterCommand("cratemrdka", function()
-	TriggerServerEvent('synccrate:server:RegisterCommand')
+RegisterCommand("cratemrdka", function(source, args)
+    local ModelHash = args[1] -- first argument after the command is the model hash
+    if ModelHash then
+        TriggerServerEvent('synccrate:server:RegisterCommand', ModelHash)
+    end
 end)
 
-RegisterNetEvent('synccrate:client:PlaceCreate', function()
+RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
     if GetVehiclePedIsIn(PlayerPedId(), false) ~= 0 then return end
     if CratePlace then return end
     CratePlace = true
-    local ModelHash = "ba_prop_battle_crates_rifles_01a"
-    -- local properMaterial = 1333033863
     RequestModel(ModelHash)
     while not HasModelLoaded(ModelHash) do Wait(0) end
     exports['qb-core']:DrawText("Press [ G ] to cancel ", 'left')
@@ -50,9 +51,8 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function()
     SetEntityAlpha(crate, 150, true)
 	local netId = ObjToNet(crate)
 	SetNetworkIdExistsOnAllMachines(netId, true)
-	NetworkSetNetworkIdDynamic(netId, true)
+	NetworkUseHighPrecisionBlending(netId, true)
 	SetNetworkIdCanMigrate(netId, false)
-
     local plantedcrate = false
     while not plantedcrate do
         Wait(0)
@@ -60,19 +60,20 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function()
         CurrentCoords = dest
         if hit == 1 then
             SetEntityCoords(crate, dest.x, dest.y, dest.z + Config.ObjectZOffset)
-            PlaceObjectOnGroundProperly_2(crate)
+            PlaceObjectOnGroundProperly(crate)
 
-            if IsDisabledControlJustPressed(0, 99) then
-                    heading = heading + 5
+                if IsDisabledControlJustPressed(0, 99) then -- scroll wheel up just pressed
+                    local delta = IsDisabledControlPressed(0, 36) and 0.5 or 5 -- Adjust heading change amount based on whether Ctrl is held down
+                    heading = heading + delta
                     if heading > 360 then heading = 0.0 end
                 end    
-                if IsDisabledControlJustPressed(0, 81) then
-                    heading = heading - 5
+                if IsDisabledControlJustPressed(0, 81) then -- scroll wheel down just pressed
+                    local delta = IsDisabledControlPressed(0, 36) and 0.5 or 5 -- Adjust heading change amount based on whether Ctrl is held down
+                    heading = heading - delta
                     if heading < 0 then heading = 360.0 end
                 end
-                SetEntityHeading(crate, heading)
-            -- if Config.MaterialHashes[materialHash] then 
-                -- print("yes")
+                SetEntityHeading(crate, heading)               
+
                 if IsControlJustPressed(0, 38) then
                     plantedcrate = true
                     exports['qb-core']:KeyPressed(38)
@@ -94,7 +95,7 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function()
                         disableMouse = false,
                         disableCombat = true,
                     }, {}, {}, {}, function()
-						TriggerServerEvent('synccrate:server:CreateNewCrate', dest, heading, crate)
+						TriggerServerEvent('synccrate:server:CreateNewCrate', dest, heading, crate, ModelHash)
                         plantedcrate = false
                         CratePlace = false
                         ClearPedTasks(ped)
@@ -108,9 +109,7 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function()
                         RemoveAnimDict('amb@medic@standing@kneel@base')
                         RemoveAnimDict('anim@gangops@facility@servers@bodysearch@')
                     end)
-                end
-            -- end
-                        
+                end                        
             -- [G] to cancel
             if IsControlJustPressed(0, 47) then
                 exports['qb-core']:KeyPressed(47)
@@ -139,12 +138,13 @@ end
 
 -- Event handler for syncing the crate from server to clients
 RegisterNetEvent('synccrate:client')
-AddEventHandler('synccrate:client', function(coords, heading, crate)
-    local ModelHash = "ba_prop_battle_crates_rifles_01a"
+AddEventHandler('synccrate:client', function(coords, heading, crate, ModelHash)
+    -- local ModelHash = "ba_prop_battle_crates_rifles_01a"
     local crateEntity = CreateObjectNoOffset(ModelHash, coords.x, coords.y, coords.z + Config.ObjectZOffset, true, true, false)
     FreezeEntityPosition(crateEntity, true)  
     SetEntityHeading(crateEntity, heading)   
     local crateNet = ObjToNet(crateEntity)
+    PlaceObjectOnGroundProperly(crateEntity)
     TriggerServerEvent("synccrate:server:showTarget", crateNet)
 end)
 
