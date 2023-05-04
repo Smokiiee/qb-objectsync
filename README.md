@@ -1,4 +1,4 @@
-# test_resource-Sync_New
+# qb-objectsync
 
 test resource for creating props that have qb-target
 
