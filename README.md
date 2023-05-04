@@ -9,5 +9,6 @@ this was made with qb-core framwork
 
 # Dependencies
 
-qb-core
-qb-target 
+- qb-core
+
+- qb-target
