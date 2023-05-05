@@ -29,7 +29,7 @@ function CheckSurface()
 end
 
 -- Spawn a crate object and sync it to the server
-RegisterCommand("cratemrdka", function(source, args)
+RegisterCommand("MakeCrate", function(source, args)
     local ModelHash = args[1] -- first argument after the command is the model hash
     if ModelHash then
         TriggerServerEvent('synccrate:server:RegisterCommand', ModelHash)
@@ -37,7 +37,7 @@ RegisterCommand("cratemrdka", function(source, args)
 end)
 
 Citizen.CreateThread(function()
-    TriggerEvent('chat:addSuggestion', '/cratemrdka', 'Create an object to spawn of your choosing ', {
+    TriggerEvent('chat:addSuggestion', '/MakeCrate', 'Create an object to spawn of your choosing ', {
       {name="Model Hash", help="Model Hash"},
     })
 end)
@@ -165,7 +165,7 @@ AddEventHandler("synccrate:client:showTarget", function(crate)
 				icon = "fa-solid fa-magnifying-glass",
 				label = 'Open Crate ',
 				action = function(crate)
-					TriggerEvent('jmy:crate:open', false, crate)
+					TriggerEvent('synccrate:client:open', false, crate)
 				end     
 			},
 			{           
@@ -175,7 +175,7 @@ AddEventHandler("synccrate:client:showTarget", function(crate)
 				label = 'Remove Create ',
 				canInteract = function() return CrateUser() end, -- Only show this option if the player has access
 				action = function(crate)
-					TriggerEvent('jmy:crate:Remove', false, crate)
+					TriggerEvent('synccrate:client:Remove', false, crate)
 				end     
 			}
 		},
@@ -192,8 +192,8 @@ AddEventHandler("synccrate:client:removeTarget", function(crate)
 end)
 
 -- Event handler for opening the crate
-RegisterNetEvent('jmy:crate:open')
-AddEventHandler('jmy:crate:open', function(zavolano, crate)
+RegisterNetEvent('synccrate:client:open')
+AddEventHandler('synccrate:client:open', function(zavolano, crate)
 	QBCore.Functions.Progressbar("looti", "Searching crate", math.random(1000, 2000), false, true, {
 		disableMovement = true,
 		disableCarMovement = true,
@@ -228,8 +228,8 @@ AddEventHandler('jmy:crate:open', function(zavolano, crate)
 end)
 
 -- Event handler for removing the crate
-RegisterNetEvent('jmy:crate:Remove')
-AddEventHandler('jmy:crate:Remove', function(zavolano, crate)
+RegisterNetEvent('synccrate:client:Remove')
+AddEventHandler('synccrate:client:Remove', function(zavolano, crate)
 	QBCore.Functions.Progressbar("looti", "Searching crate", math.random(1500, 2500), false, true, {
 		disableMovement = true,
 		disableCarMovement = true,
