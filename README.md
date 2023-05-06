@@ -13,4 +13,4 @@ this was made with qb-core framwork
 
 - qb-target
 
-- Ps-ui https://github.com/Project-Sloth/ps-hud
+- Ps-ui https://github.com/Project-Sloth/ps-ui
