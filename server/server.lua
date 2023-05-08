@@ -1,5 +1,6 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 
+local cratesCreated = {}
 print("Server is loaded")
 
 RegisterServerEvent('synccrate')
