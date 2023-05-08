@@ -417,7 +417,7 @@ end
 
 -- Event handler for syncing the crate from server to clients
 RegisterNetEvent('synccrate:client')
-AddEventHandler('synccrate:client', function(coords, heading, crate, ModelHash)
+AddEventHandler('synccrate:client', function(coords, heading, crate, ModelHash, crateItems)
     -- local ModelHash = "ba_prop_battle_crates_rifles_01a"
     local crateEntity = CreateObjectNoOffset(ModelHash, coords.x, coords.y, coords.z + Config.ObjectZOffset, true, true, false)
     FreezeEntityPosition(crateEntity, true)  
