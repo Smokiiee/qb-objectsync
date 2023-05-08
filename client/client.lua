@@ -1,5 +1,8 @@
 local QBCore = exports['qb-core']:GetCoreObject()
 local CratePlace = false
+local crateInventory = {}
+local crateObject = nil
+
 
 local RotationToDirection = function(rot)
     local rotZ = math.rad(rot.z)
@@ -28,11 +31,281 @@ function CheckSurface()
     return hit, materialHash
 end
 
+
+--- Object Creation START ---
+--- Object Creation START ---
+--- Object Creation START ---
+
+local ObjectSelection = function()
+    local inputFields = {}
+
+    -- This adds the objects to the list
+    local objectOptions = {}
+    for name, label in pairs(Config.Objects) do
+        objectOptions[#objectOptions+1] = { text = label..' - '..name, value = name }
+    end
+
+    inputFields[#inputFields + 1] = {
+        header = "Object",
+        name = "object",
+        text = "Select the object",
+        type = 'select',
+        options = objectOptions, -- use the options table we created
+    }
+
+    local dialog = exports['qb-input']:ShowInput({
+        header = "",
+        submitText = "Create",
+        inputs = inputFields
+    })
+
+    if dialog then
+        crateObject = dialog.object
+        CreateInventory(crateObject)
+    end
+end
+
+ObjectItems = function()
+    local inputFields = {}
+
+
+    local addedItems = {}
+    for item, data in pairs(crateInventory) do
+        addedItems[item] = true
+    end
+
+    -- This adds all the items from QBCore.Shared.Items
+    local itemsOptions = {} 
+    for itemName, itemData in pairs(QBCore.Shared.Items) do
+        if not addedItems[itemName] then 
+            itemsOptions[#itemsOptions+1] = { text = itemData.label, value = itemName }
+        end
+    end
+
+    -- This sorts the items in alphabetical order.
+    table.sort(itemsOptions, function(a, b)
+        if a.text == nil or b.text == nil then
+            return false
+        end
+        return a.text < b.text
+    end)
+    
+    inputFields[#inputFields + 1] = {
+        header = "Item",
+        name = "item",
+        text = "Select item",
+        type = 'select',
+        options = itemsOptions,
+    }
+    inputFields[#inputFields + 1] = {
+        header = "Amount",
+        name = "minAmount",
+        text = "Minimum amount",
+        type = 'number',
+        isRequired = true,
+    }
+    inputFields[#inputFields + 1] = {
+        header = "Amount",
+        name = "maxAmount",
+        text = "Maximum amount",
+        type = 'number',
+        isRequired = true,
+    }
+
+    local dialog = exports['qb-input']:ShowInput({
+        header = "",
+        submitText = "Select",
+        inputs = inputFields
+    })
+
+    if dialog then
+        local minAmount = tonumber(dialog.minAmount)
+        local maxAmount = tonumber(dialog.maxAmount)
+        local item = dialog.item
+    
+        if maxAmount < minAmount then
+            QBCore.Functions.Notify("Maximum amount can't be lower than minimum amount.", "error")
+            ObjectItems()
+            return
+        end
+        
+        crateInventory[item] = {
+            amount = {
+                min = minAmount,
+                max = maxAmount,
+            },
+        }
+        CreateInventory()
+    end
+end
+
+CreateInventory = function()  
+    local list = {}
+    list[#list + 1] = {
+        isMenuHeader = true,
+        header = "Crate creation",
+        txt = "",
+    }
+    list[#list + 1] = {
+        header = "Crate object",
+        txt = crateObject and tostring(Config.Objects[crateObject])..' - '.. crateObject or "Select object",
+        params = {
+            isAction = true,
+            event = function()
+                ObjectSelection()
+            end,
+        },
+    }
+    if crateObject then 
+        for item, data in pairs(crateInventory) do
+            list[#list + 1] = {
+                header = QBCore.Shared.Items[item].label,
+                txt = 'Minimum: '.. data.amount.min..' Maximum: '..data.amount.max,
+                params = {
+                    isAction = true,
+                    event = function()
+                        EditItem(item)
+                    end,
+                },
+            }
+        end
+        list[#list + 1] = {
+            header = "Add item",
+            txt = 'Press here to add items to the crate!',
+            params = {
+                isAction = true,
+                event = function()
+                    ObjectItems()
+                end,
+            },
+        }
+        if next(crateInventory) ~= nil then
+            list[#list + 1] = {
+                header = "Confirm",
+                txt = 'Press here to place the crate!',
+                params = {
+                    isAction = true,
+                    event = function()
+                        TriggerEvent('synccrate:client:PlaceCreate', crateObject)
+                        
+                    end,
+                },
+            }
+        end
+
+    end
+    exports['qb-menu']:openMenu(list)
+end
+
+EditItem = function(item)
+    local list = {}
+    list[#list + 1] = {
+        isMenuHeader = true,
+        header = 'Modify item',
+        txt = "",
+    }
+    list[#list + 1] = {
+        header = "Remove",
+        txt = 'Press here to remove '..QBCore.Shared.Items[item].label..' from the crate.',
+        params = {
+            isAction = true,
+            event = function()
+                local confirmationMenu = {}
+                confirmationMenu[#confirmationMenu + 1] = {
+                    header = "Confirm Removal",
+                    isMenuHeader = true,
+                }
+                confirmationMenu[#confirmationMenu + 1] = {
+                    header = "Yes",
+                    txt = "Are you sure you want to remove ".. QBCore.Shared.Items[item].label.."?",
+                    params = {
+                        isAction = true,
+                        event = function()
+                            crateInventory[item] = nil
+                            CreateInventory()
+                        end,
+                    },
+                }
+                confirmationMenu[#confirmationMenu + 1] = {
+                    header = "Cancel",
+                    params = {
+                        isAction = true,
+                        event = function()
+                            CreateInventory()
+                        end,
+                    },
+                }
+                exports['qb-menu']:openMenu(confirmationMenu)
+            end,
+        },
+    }
+    list[#list + 1] = {
+        header = "Update amount",
+        txt = 'Minimum: '.. crateInventory[item].amount.min..' Maximum: '..crateInventory[item].amount.max,
+        params = {
+            isAction = true,
+            event = function()
+                EditAmount(item)
+            end,
+        },
+    }
+    exports['qb-menu']:openMenu(list)
+end
+
+EditAmount = function(item)
+    debugPrint(item)
+    local inputFields = {}
+    inputFields[#inputFields + 1] = {
+        header = "Update amount",
+        text = "Please select new values.",
+    }
+    inputFields[#inputFields + 1] = {
+        header = "Amount",
+        name = "minAmount",
+        text = "Minimum amount",
+        type = 'number',
+        isRequired = true
+    }
+    inputFields[#inputFields + 1] = {
+        header = "Amount",
+        name = "maxAmount",
+        text = "Maximum amount",
+        type = 'number',
+        isRequired = true
+
+    }
+
+    local dialog = exports['qb-input']:ShowInput({
+        header = "",
+        submitText = "Update",
+        inputs = inputFields,
+    })
+    if dialog then
+        local minAmount = tonumber(dialog.minAmount)
+        local maxAmount = tonumber(dialog.maxAmount)
+
+        if maxAmount < minAmount then
+            QBCore.Functions.Notify("Maximum amount can't be lower than minimum amount.", "error")
+            CreateInventory()
+            return
+        end
+        crateInventory[item].amount.min = minAmount
+        crateInventory[item].amount.max = maxAmount
+        CreateInventory()
+    end
+end
+
+--- Object Creation END ---
+--- Object Creation END ---
+--- Object Creation END ---
+
 -- Spawn a crate object and sync it to the server
 RegisterCommand("MakeCrate", function(source, args)
     local ModelHash = args[1] -- first argument after the command is the model hash
     if ModelHash then
         TriggerServerEvent('synccrate:server:RegisterCommand', ModelHash)
+    else
+        CreateInventory()
     end
 end)
 
@@ -101,7 +374,7 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
                         disableMouse = false,
                         disableCombat = true,
                     }, {}, {}, {}, function()
-						TriggerServerEvent('synccrate:server:CreateNewCrate', dest, heading, crate, ModelHash)
+						TriggerServerEvent('synccrate:server:CreateNewCrate', dest, heading, crate, ModelHash, crateInventory)
                         plantedcrate = false
                         CratePlace = false
                         ClearPedTasks(ped)
@@ -149,9 +422,9 @@ AddEventHandler('synccrate:client', function(coords, heading, crate, ModelHash)
     local crateEntity = CreateObjectNoOffset(ModelHash, coords.x, coords.y, coords.z + Config.ObjectZOffset, true, true, false)
     FreezeEntityPosition(crateEntity, true)  
     SetEntityHeading(crateEntity, heading)   
-    local crateNet = ObjToNet(crateEntity)
+    local crateNet = NetworkGetNetworkIdFromEntity(crateEntity)
     PlaceObjectOnGroundProperly(crateEntity)
-    TriggerServerEvent("synccrate:server:showTarget", crateNet)
+    TriggerServerEvent("synccrate:server:showTarget", crateNet, crateItems)
 end)
 
 -- Event handler for showing the target marker on clients
@@ -161,7 +434,6 @@ AddEventHandler("synccrate:client:showTarget", function(crate)
 		options = {
 			{           
 				num = 1,
-				type = 'client',
 				icon = "fa-solid fa-magnifying-glass",
 				label = 'Open Crate ',
 				action = function(crate)
@@ -170,7 +442,6 @@ AddEventHandler("synccrate:client:showTarget", function(crate)
 			},
 			{           
 				num = 2,
-				type = 'client',
 				icon = "fa-solid fa-trash-can",
 				label = 'Remove Create ',
 				canInteract = function() return CrateUser() end, -- Only show this option if the player has access
@@ -207,7 +478,8 @@ AddEventHandler('synccrate:client:open', function(zavolano, crate)
         if crate and DoesEntityExist(crate) then -- Check for existence of crate
 			exports['ps-ui']:Circle(function(success) 
 				if success then
-					TriggerServerEvent('synccrate:server:CrateItem')
+					--TriggerServerEvent('synccrate:server:CrateItem')
+                    TriggerServerEvent('synccrate:server:CrateItem', ObjToNet(crate))
 					TriggerServerEvent("synccrate:server:removeTarget", ObjToNet(crate))
 					StopAnimTask(PlayerPedId(), "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer", 1.0)
 				else
