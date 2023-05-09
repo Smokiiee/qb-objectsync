@@ -36,36 +36,9 @@ end
 --- Object Creation START ---
 --- Object Creation START ---
 
-local ObjectSelection = function()
-    local inputFields = {}
 
-    -- This adds the objects to the list
-    local objectOptions = {}
-    for name, label in pairs(Config.Objects) do
-        objectOptions[#objectOptions + 1] = { text = label .. ' - ' .. name, value = name }
-    end
 
-    inputFields[#inputFields + 1] = {
-        header = "Object",
-        name = "object",
-        text = "Select the object",
-        type = 'select',
-        options = objectOptions, -- use the options table we created
-    }
-
-    local dialog = exports['qb-input']:ShowInput({
-        header = "",
-        submitText = "Create",
-        inputs = inputFields
-    })
-
-    if dialog then
-        crateObject = dialog.object
-        CreateInventory(crateObject)
-    end
-end
-
-ObjectItems = function()
+ObjectItems = function(category)
     local inputFields = {}
 
 
@@ -76,10 +49,37 @@ ObjectItems = function()
 
     -- This adds all the items from QBCore.Shared.Items
     local itemsOptions = {}
+
+    -- Category table
+    local weapons = {}
+    local weapons_accessories = {}
+    local items = {}
+    
     for itemName, itemData in pairs(QBCore.Shared.Items) do
-        if not addedItems[itemName] then
-            itemsOptions[#itemsOptions + 1] = { text = itemData.label, value = itemName }
+        if not addedItems[itemName] and not Config.IgnoreItems[itemName] then
+           
+            if string.match(itemName, "weapon") or string.match(itemName, "ammo") then
+                weapons[#weapons + 1] = { text = itemData.label, value = itemName }
+            elseif string.match(itemName, "clip") or string.match(itemName, "scope") 
+                or string.match(itemName, "drum") or string.match(itemName, "weapontint") 
+                or string.match(itemName, "grip") or string.match(itemName, "suppressor")
+                or string.match(itemName, "flashlight") or string.match(itemName, "finish")
+                or string.match(itemName, "variant")
+                then
+                weapons_accessories[#weapons_accessories + 1] = { text = itemData.label..' - '..itemData.description, value = itemName }
+            else
+                items[#items + 1] = { text = itemData.label, value = itemName }
+            end
+            
         end
+    end
+
+    if category == 'weapons' then
+        itemsOptions = weapons
+    elseif category == 'weapons_accessories' then
+        itemsOptions = weapons_accessories
+    elseif category == 'items' then
+        itemsOptions = items
     end
 
     -- This sorts the items in alphabetical order.
@@ -125,7 +125,7 @@ ObjectItems = function()
 
         if maxAmount < minAmount then
             QBCore.Functions.Notify("Maximum amount can't be lower than minimum amount.", "error")
-            ObjectItems()
+            ObjectItems(category)
             return
         end
 
@@ -137,6 +137,30 @@ ObjectItems = function()
         }
         CreateInventory()
     end
+end
+
+ObjectSelection = function()
+    local list = {}
+    list[#list + 1] = {
+        isMenuHeader = true,
+        header = "Select crate object",
+        txt = "",
+    }
+    for name, label in pairs(Config.Objects) do
+        --objectOptions[#objectOptions + 1] = { text = label .. ' - ' .. name, value = name }
+        list[#list + 1] = {
+            header = label,
+            txt = 'Propname: '..name,
+            params = {
+                isAction = true,
+                event = function()
+                    crateObject = name
+                    CreateInventory(crateObject)
+                end,
+            },
+        }
+    end
+    exports['qb-menu']:openMenu(list)
 end
 
 CreateInventory = function()
@@ -170,12 +194,32 @@ CreateInventory = function()
             }
         end
         list[#list + 1] = {
-            header = "Add item",
+            header = "Add weapons and ammo",
             txt = 'Press here to add items to the crate!',
             params = {
                 isAction = true,
                 event = function()
-                    ObjectItems()
+                    ObjectItems('weapons')
+                end,
+            },
+        }
+        list[#list + 1] = {
+            header = "Add weapons accessories",
+            txt = 'Press here to add items to the crate!',
+            params = {
+                isAction = true,
+                event = function()
+                    ObjectItems('weapons_accessories')
+                end,
+            },
+        }
+        list[#list + 1] = {
+            header = "Add items",
+            txt = 'Press here to add items to the crate!',
+            params = {
+                isAction = true,
+                event = function()
+                    ObjectItems('items')
                 end,
             },
         }

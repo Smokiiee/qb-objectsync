@@ -20,7 +20,13 @@ Config.Objects = {
 }
 
 Config.IgnoreItems = {
-  -- TODO
+    ['id_card'] = true,
+    ['driver_license'] = true,
+    ['lawyerpass'] = true,
+    ['weaponlicense'] = true,
+    ['visa'] = true,
+    ['mastercard'] = true,
+  
 }
 
 -- function to handle debug prints
