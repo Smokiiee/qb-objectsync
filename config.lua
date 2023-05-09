@@ -1,8 +1,8 @@
 Config = Config or {}
 
 Config.Debug = true
-Config.rayCastingDistance = 50.0
 
+Config.rayCastingDistance = 50.0
 Config.ObjectZOffset = - 0.5
 
 Config.RandomWeapon = math.random(2, 4) 
@@ -16,18 +16,21 @@ Config.HasCrateAccsess = {
 
 Config.Objects = {
     ['prop_tool_box_06'] = 'Tool box 6',
-    ['prop_tool_box_05'] = 'Tool box 5',
-   
-    
+    ['prop_tool_box_05'] = 'Tool box 5', 
 }
 
-function debugPrint(text) -- function to handle debug prints
+Config.IgnoreItems = {
+  -- TODO
+}
+
+-- function to handle debug prints
+debugPrint = function(text)
     if Config.Debug then
         tPrint(text, 0)
     end
 end
 
-function tPrint(tbl, indent)
+tPrint = function(tbl, indent)
     indent = indent or 0
     if type(tbl) == 'table' then
         for k, v in pairs(tbl) do
