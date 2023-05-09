@@ -65,7 +65,7 @@ ObjectItems = function(category)
                 or string.match(itemName, "grip") or string.match(itemName, "suppressor")
                 or string.match(itemName, "flashlight") or string.match(itemName, "finish")
                 or string.match(itemName, "variant")
-                then
+            then
                 weapons_accessories[#weapons_accessories + 1] = { text = itemData.label..' - '..itemData.description, value = itemName }
             else
                 items[#items + 1] = { text = itemData.label, value = itemName }
