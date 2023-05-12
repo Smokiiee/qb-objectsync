@@ -9,8 +9,9 @@ RegisterNetEvent("synccrate:server:addCrates", function()
     TriggerClientEvent('synccrate:client:addCrates', src, cratesCreated)
 end)
 
-RegisterNetEvent("synccrate:server:showTarget", function(crate, items)
-    cratesCreated[crate] = true
+RegisterNetEvent("synccrate:server:showTarget", function(crate, items, difficulty)
+    cratesCreated[crate] = difficulty
+    --cratesCreated[crate] = true
     crateItems[crate] = items
     TriggerClientEvent('synccrate:client:addCrates', -1, cratesCreated)
     debugPrint(cratesCreated)

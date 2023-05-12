@@ -14,6 +14,27 @@ Config.HasCrateAccsess = {
     
 }
 
+Config.Difficulty = {
+    [1] = {
+        name = 'Easy',
+        circles = 1,
+        seconds= 15,
+    },
+    [2] = {
+        name = 'Medium',
+        circles = 2,
+        seconds= 10,
+    },
+    [3] = {
+        name = 'Hard',
+        circles = 3,
+        seconds= 5,
+    }
+    
+    
+
+}
+
 Config.Objects = {
     ['prop_tool_box_06'] = 'Tool box 6',
     ['prop_tool_box_05'] = 'Tool box 5', 
@@ -26,6 +47,7 @@ Config.IgnoreItems = {
     ['weaponlicense'] = true,
     ['visa'] = true,
     ['mastercard'] = true,
+    --['weapon_unarmed'] = true,
   
 }
 

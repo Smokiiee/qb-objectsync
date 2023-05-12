@@ -2,8 +2,11 @@ local QBCore = exports['qb-core']:GetCoreObject()
 local CratePlace = false
 local crateInventory = {}
 local crateObject = nil
+local crateDifficulty = nil
+
 local cratesCreated = {}
 local targetsAdded = {}
+
 
 local RotationToDirection = function(rot)
     local rotZ = math.rad(rot.z)
@@ -35,8 +38,6 @@ end
 --- Object Creation START ---
 --- Object Creation START ---
 --- Object Creation START ---
-
-
 
 ObjectItems = function(category)
     local inputFields = {}
@@ -147,7 +148,6 @@ ObjectSelection = function()
         txt = "",
     }
     for name, label in pairs(Config.Objects) do
-        --objectOptions[#objectOptions + 1] = { text = label .. ' - ' .. name, value = name }
         list[#list + 1] = {
             header = label,
             txt = 'Propname: '..name,
@@ -180,7 +180,19 @@ CreateInventory = function()
             end,
         },
     }
+   
     if crateObject then
+        
+        list[#list + 1] = {
+            header = "Set difficulty",
+            txt = crateDifficulty and Config.Difficulty[crateDifficulty].name or "Press here to set difficulty",
+            params = {
+                isAction = true,
+                event = function()
+                    SetDifficulty()
+                end,
+            },
+        }
         for item, data in pairs(crateInventory) do
             list[#list + 1] = {
                 header = QBCore.Shared.Items[item].label,
@@ -223,7 +235,7 @@ CreateInventory = function()
                 end,
             },
         }
-        if next(crateInventory) ~= nil then
+        if next(crateInventory) ~= nil and crateDifficulty ~= nil then
             list[#list + 1] = {
                 header = "Confirm",
                 txt = 'Press here to place the crate!',
@@ -235,6 +247,29 @@ CreateInventory = function()
                 },
             }
         end
+    end
+    exports['qb-menu']:openMenu(list)
+end
+
+SetDifficulty = function()
+    local list = {}
+    list[#list + 1] = {
+        isMenuHeader = true,
+        header = 'Set difficulty',
+        txt = "",
+    }
+    for difficulty, data in pairs(Config.Difficulty) do
+        list[#list + 1] = {
+            header = data.name,
+            txt = 'Circles: '..data.circles..' - Seconds: '..data.seconds,
+            params = {
+                isAction = true,
+                event = function()
+                    crateDifficulty = difficulty
+                    CreateInventory()
+                end,
+            },
+        }
     end
     exports['qb-menu']:openMenu(list)
 end
@@ -390,7 +425,7 @@ end)
 Citizen.CreateThread(function()
     while true do
         -- loop through the cratesCreated table to find and add the target
-        for crate, _ in pairs(cratesCreated) do
+        for crate, difficulty in pairs(cratesCreated) do
             -- check if the crate has already been added
             if not targetsAdded[crate] and NetworkDoesEntityExistWithNetworkId(crate) then
                 debugPrint("Adding target for crate: " .. crate)
@@ -403,7 +438,7 @@ Citizen.CreateThread(function()
                             icon = "fa-solid fa-magnifying-glass",
                             label = 'Open Crate ',
                             action = function(crate)
-                                TriggerEvent('synccrate:client:open', false, crate)
+                                TriggerEvent('synccrate:client:open', false, crate, difficulty)
                             end
                         },
                         {
@@ -421,7 +456,7 @@ Citizen.CreateThread(function()
                 targetsAdded[crate] = true -- mark the crate as added
             end
         end
-        Citizen.Wait(5000) -- wait 5 seconds before checking again
+        Citizen.Wait(2500) -- wait 5 seconds before checking again
     end
 end)
 
@@ -522,7 +557,7 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
 end)
 
 -- Event for opening the crate
-RegisterNetEvent('synccrate:client:open', function(zavolano, crate)
+RegisterNetEvent('synccrate:client:open', function(zavolano, crate, difficulty)
     QBCore.Functions.Progressbar("looti", "Searching crate", math.random(1000, 2000), false, true, {
         disableMovement = true,
         disableCarMovement = true,
@@ -536,7 +571,6 @@ RegisterNetEvent('synccrate:client:open', function(zavolano, crate)
         if crate and DoesEntityExist(crate) then -- Check for existence of crate
             exports['ps-ui']:Circle(function(success)
                 if success then
-                    --TriggerServerEvent('synccrate:server:CrateItem')
                     TriggerServerEvent('synccrate:server:CrateItem', ObjToNet(crate))
                     TriggerServerEvent("synccrate:server:removeTarget", ObjToNet(crate))
                     StopAnimTask(PlayerPedId(), "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer",
@@ -544,7 +578,8 @@ RegisterNetEvent('synccrate:client:open', function(zavolano, crate)
                 else
                     QBCore.Functions.Notify("Someone was faster", "error")
                 end
-            end, 1, 15) -- NumberOfCircles, MS
+           -- end, 1, 15) -- NumberOfCircles, MS
+            end, Config.Difficulty[difficulty].circles, Config.Difficulty[difficulty].seconds) -- NumberOfCircles, MS
             StopAnimTask(PlayerPedId(), "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer", 1.0)
         else
             debugPrint("Crate not found")
@@ -596,7 +631,11 @@ RegisterNetEvent('synccrate:client', function(coords, heading, crate, ModelHash,
     SetNetworkIdCanMigrate(crateNet, true)
     SetNetworkIdExistsOnAllMachines(crateNet, true)
     PlaceObjectOnGroundProperly(crateEntity)
-    TriggerServerEvent("synccrate:server:showTarget", crateNet, crateItems)
+    TriggerServerEvent("synccrate:server:showTarget", crateNet, crateItems, crateDifficulty)
+
+    crateInventory = {}
+    crateObject = nil
+    crateDifficulty = nil
 end)
 
 -- Event for removing the target marker from clients
@@ -610,10 +649,10 @@ RegisterNetEvent("synccrate:client:removeTarget", function(crate)
 end)
 
 RegisterNetEvent('synccrate:client:addCrates', function(crates)
-    for crate, _ in pairs(crates) do
+    for crate, difficulty in pairs(crates) do
         if not cratesCreated[crate] then
-            cratesCreated[crate] = true
-            debugPrint("Crate added to list: " .. crate)
+            cratesCreated[crate] = difficulty
+            debugPrint("Crate added to list: " .. crate .. " Difficulty: "..Config.Difficulty[difficulty].name)
         end
     end
 end)
