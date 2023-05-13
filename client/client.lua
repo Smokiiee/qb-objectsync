@@ -1,6 +1,9 @@
 local QBCore = exports['qb-core']:GetCoreObject()
-local CratePlace = false
+local cratePlace = false
+
 local crateInventory = {}
+local crateMoney = {}
+
 local crateObject = nil
 local crateDifficulty = nil
 
@@ -42,62 +45,62 @@ end
 ObjectItems = function(category)
     local inputFields = {}
 
+    if category then
+        local addedItems = {}
+        for item, data in pairs(crateInventory) do
+            addedItems[item] = true
+        end
 
-    local addedItems = {}
-    for item, data in pairs(crateInventory) do
-        addedItems[item] = true
-    end
+        -- This adds all the items from QBCore.Shared.Items
+        local itemsOptions = {}
 
-    -- This adds all the items from QBCore.Shared.Items
-    local itemsOptions = {}
+        -- Category table
+        local weapons = {}
+        local weapons_accessories = {}
+        local items = {}
 
-    -- Category table
-    local weapons = {}
-    local weapons_accessories = {}
-    local items = {}
-    
-    for itemName, itemData in pairs(QBCore.Shared.Items) do
-        if not addedItems[itemName] and not Config.IgnoreItems[itemName] then
-           
-            if string.match(itemName, "weapon") or string.match(itemName, "ammo") then
-                weapons[#weapons + 1] = { text = itemData.label, value = itemName }
-            elseif string.match(itemName, "clip") or string.match(itemName, "scope") 
-                or string.match(itemName, "drum") or string.match(itemName, "weapontint") 
-                or string.match(itemName, "grip") or string.match(itemName, "suppressor")
-                or string.match(itemName, "flashlight") or string.match(itemName, "finish")
-                or string.match(itemName, "variant")
-            then
-                weapons_accessories[#weapons_accessories + 1] = { text = itemData.label..' - '..itemData.description, value = itemName }
-            else
-                items[#items + 1] = { text = itemData.label, value = itemName }
+        for itemName, itemData in pairs(QBCore.Shared.Items) do
+            if not addedItems[itemName] and not Config.IgnoreItems[itemName] then
+                if string.match(itemName, "weapon") or string.match(itemName, "ammo") then
+                    weapons[#weapons + 1] = { text = itemData.label, value = itemName }
+                elseif string.match(itemName, "clip") or string.match(itemName, "scope")
+                    or string.match(itemName, "drum") or string.match(itemName, "weapontint")
+                    or string.match(itemName, "grip") or string.match(itemName, "suppressor")
+                    or string.match(itemName, "flashlight") or string.match(itemName, "finish")
+                    or string.match(itemName, "variant")
+                then
+                    weapons_accessories[#weapons_accessories + 1] = { text = itemData.label ..
+                    ' - ' .. itemData.description, value = itemName }
+                else
+                    items[#items + 1] = { text = itemData.label, value = itemName }
+                end
             end
-            
         end
-    end
 
-    if category == 'weapons' then
-        itemsOptions = weapons
-    elseif category == 'weapons_accessories' then
-        itemsOptions = weapons_accessories
-    elseif category == 'items' then
-        itemsOptions = items
-    end
-
-    -- This sorts the items in alphabetical order.
-    table.sort(itemsOptions, function(a, b)
-        if a.text == nil or b.text == nil then
-            return false
+        if category == 'weapons' then
+            itemsOptions = weapons
+        elseif category == 'weapons_accessories' then
+            itemsOptions = weapons_accessories
+        elseif category == 'items' then
+            itemsOptions = items
         end
-        return a.text < b.text
-    end)
 
-    inputFields[#inputFields + 1] = {
-        header = "Item",
-        name = "item",
-        text = "Select item",
-        type = 'select',
-        options = itemsOptions,
-    }
+        -- This sorts the items in alphabetical order.
+        table.sort(itemsOptions, function(a, b)
+            if a.text == nil or b.text == nil then
+                return false
+            end
+            return a.text < b.text
+        end)
+
+        inputFields[#inputFields + 1] = {
+            header = "Item",
+            name = "item",
+            text = "Select item",
+            type = 'select',
+            options = itemsOptions,
+        }
+    end
     inputFields[#inputFields + 1] = {
         header = "Amount",
         name = "minAmount",
@@ -126,17 +129,26 @@ ObjectItems = function(category)
 
         if maxAmount < minAmount then
             QBCore.Functions.Notify("Maximum amount can't be lower than minimum amount.", "error")
+
             ObjectItems(category)
+
             return
         end
-
-        crateInventory[item] = {
-            amount = {
+        if category then
+            crateInventory[item] = {
+                amount = {
+                    min = minAmount,
+                    max = maxAmount,
+                },
+            }
+            CrateItems()
+        else
+            crateMoney = {
                 min = minAmount,
                 max = maxAmount,
-            },
-        }
-        CreateInventory()
+            }
+            CreateInventory()
+        end
     end
 end
 
@@ -147,15 +159,73 @@ ObjectSelection = function()
         header = "Select crate object",
         txt = "",
     }
+
     for name, label in pairs(Config.Objects) do
         list[#list + 1] = {
             header = label,
-            txt = 'Propname: '..name,
+            txt = 'Propname: ' .. name,
             params = {
                 isAction = true,
                 event = function()
                     crateObject = name
                     CreateInventory(crateObject)
+                end,
+            },
+        }
+    end
+    exports['qb-menu']:openMenu(list)
+end
+
+CrateItems = function()
+    local list = {}
+    list[#list + 1] = {
+        header = "< Go Back",
+        txt = "Crate creation",
+        params = {
+            isAction = true,
+            event = function()
+                CreateInventory()
+            end,
+        },
+    }
+    list[#list + 1] = {
+        header = "Add weapons and ammo",
+        txt = 'Press here to add items to the crate!',
+        params = {
+            isAction = true,
+            event = function()
+                ObjectItems('weapons')
+            end,
+        },
+    }
+    list[#list + 1] = {
+        header = "Add weapons accessories",
+        txt = 'Press here to add items to the crate!',
+        params = {
+            isAction = true,
+            event = function()
+                ObjectItems('weapons_accessories')
+            end,
+        },
+    }
+    list[#list + 1] = {
+        header = "Add items",
+        txt = 'Press here to add items to the crate!',
+        params = {
+            isAction = true,
+            event = function()
+                ObjectItems('items')
+            end,
+        },
+    }
+    for item, data in pairs(crateInventory) do
+        list[#list + 1] = {
+            header = QBCore.Shared.Items[item].label,
+            txt = 'Minimum: ' .. data.amount.min .. ' Maximum: ' .. data.amount.max,
+            params = {
+                isAction = true,
+                event = function()
+                    EditItem(item)
                 end,
             },
         }
@@ -180,9 +250,7 @@ CreateInventory = function()
             end,
         },
     }
-   
     if crateObject then
-        
         list[#list + 1] = {
             header = "Set difficulty",
             txt = crateDifficulty and Config.Difficulty[crateDifficulty].name or "Press here to set difficulty",
@@ -193,56 +261,41 @@ CreateInventory = function()
                 end,
             },
         }
-        for item, data in pairs(crateInventory) do
-            list[#list + 1] = {
-                header = QBCore.Shared.Items[item].label,
-                txt = 'Minimum: ' .. data.amount.min .. ' Maximum: ' .. data.amount.max,
-                params = {
-                    isAction = true,
-                    event = function()
-                        EditItem(item)
-                    end,
-                },
-            }
-        end
+    end
+    if crateObject and crateDifficulty then
         list[#list + 1] = {
-            header = "Add weapons and ammo",
-            txt = 'Press here to add items to the crate!',
+            header = "Add money",
+            txt = next(crateMoney) and 'Min: ' .. crateMoney.min .. ' Max: ' .. crateMoney.max or
+            "Press here to add money",
             params = {
                 isAction = true,
                 event = function()
-                    ObjectItems('weapons')
+                    ObjectItems()
                 end,
             },
         }
+
+
         list[#list + 1] = {
-            header = "Add weapons accessories",
-            txt = 'Press here to add items to the crate!',
+            header = "Items",
+            txt = next(crateInventory) ~= nil and 'Number of items added: ' .. #crateInventory or
+            'Press here to add items to the crate!',
             params = {
                 isAction = true,
                 event = function()
-                    ObjectItems('weapons_accessories')
+                    CrateItems()
                 end,
             },
         }
-        list[#list + 1] = {
-            header = "Add items",
-            txt = 'Press here to add items to the crate!',
-            params = {
-                isAction = true,
-                event = function()
-                    ObjectItems('items')
-                end,
-            },
-        }
-        if next(crateInventory) ~= nil and crateDifficulty ~= nil then
+
+        if next(crateInventory) ~= nil or next(crateMoney) ~= nil and crateDifficulty ~= nil then
             list[#list + 1] = {
                 header = "Confirm",
                 txt = 'Press here to place the crate!',
                 params = {
                     isAction = true,
                     event = function()
-                        TriggerEvent('synccrate:client:PlaceCreate', crateObject)
+                        TriggerEvent('qb-objectsync:client:PlaceCrate', crateObject)
                     end,
                 },
             }
@@ -261,7 +314,7 @@ SetDifficulty = function()
     for difficulty, data in pairs(Config.Difficulty) do
         list[#list + 1] = {
             header = data.name,
-            txt = 'Circles: '..data.circles..' - Seconds: '..data.seconds,
+            txt = 'Circles: ' .. data.circles .. ' - Seconds: ' .. data.seconds,
             params = {
                 isAction = true,
                 event = function()
@@ -372,6 +425,24 @@ EditAmount = function(item)
     end
 end
 
+
+PlaceCrate = function(coords, heading, crate, ModelHash)
+    -- local ModelHash = "ba_prop_battle_crates_rifles_01a"
+    local crateEntity = CreateObject(ModelHash, coords.x, coords.y, coords.z + Config.ObjectZOffset, true, true, false)
+    FreezeEntityPosition(crateEntity, true)
+    SetEntityHeading(crateEntity, heading)
+    local crateNet = ObjToNet(crateEntity)
+
+    SetNetworkIdCanMigrate(crateNet, true)
+    SetNetworkIdExistsOnAllMachines(crateNet, true)
+    PlaceObjectOnGroundProperly(crateEntity)
+    TriggerServerEvent("qb-objectsync:server:showTarget", crateNet, crateInventory, crateDifficulty, crateMoney)
+
+    crateInventory = {}
+    crateObject = nil
+    crateDifficulty = nil
+    crateMoney = {}
+end
 --- Object Creation END ---
 --- Object Creation END ---
 --- Object Creation END ---
@@ -407,7 +478,7 @@ RemoveCrate = function(crate)
 end
 
 DeleteCratefunction = function(crate)
-    TriggerServerEvent("synccrate:server:removeTarget", ObjToNet(crate))
+    TriggerServerEvent("qb-objectsync:server:removeTarget", ObjToNet(crate))
     SetEntityAsMissionEntity(crate, true, true)
     DeleteObject(crate)
 end
@@ -416,7 +487,7 @@ end
 RegisterCommand("MakeCrate", function(source, args)
     local ModelHash = args[1] -- first argument after the command is the model hash
     if ModelHash then
-        TriggerServerEvent('synccrate:server:RegisterCommand', ModelHash)
+        TriggerServerEvent('qb-objectsync:server:RegisterCommand', ModelHash)
     else
         CreateInventory()
     end
@@ -438,7 +509,7 @@ Citizen.CreateThread(function()
                             icon = "fa-solid fa-magnifying-glass",
                             label = 'Open Crate ',
                             action = function(crate)
-                                TriggerEvent('synccrate:client:open', false, crate, difficulty)
+                                TriggerEvent('qb-objectsync:client:open', false, crate, difficulty)
                             end
                         },
                         {
@@ -447,7 +518,7 @@ Citizen.CreateThread(function()
                             label = 'Remove Create ',
                             canInteract = function() return CrateUser() end,
                             action = function(crate)
-                                TriggerEvent('synccrate:client:Remove', false, crate)
+                                TriggerEvent('qb-objectsync:client:Remove', false, crate)
                             end
                         }
                     },
@@ -466,11 +537,14 @@ Citizen.CreateThread(function()
     })
 end)
 
+-- Event for syncing the crate from server to clients
+
+
 -- Event for placing crate
-RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
+RegisterNetEvent('qb-objectsync:client:PlaceCrate', function(ModelHash)
     if GetVehiclePedIsIn(PlayerPedId(), false) ~= 0 then return end
-    if CratePlace then return end
-    CratePlace = true
+    if cratePlace then return end
+    cratePlace = true
     RequestModel(ModelHash)
     while not HasModelLoaded(ModelHash) do Wait(0) end
     exports['qb-core']:DrawText("Press [ G ] to cancel ", 'left')
@@ -484,8 +558,8 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
     SetNetworkIdExistsOnAllMachines(netId, true)
     NetworkUseHighPrecisionBlending(netId, true)
     SetNetworkIdCanMigrate(netId, false)
-    local plantedcrate = false
-    while not plantedcrate do
+    local plantedCrate = false
+    while not plantedCrate do
         Wait(0)
         hit, dest, _, _, materialHash = RayCastCamera(Config.rayCastingDistance)
         CurrentCoords = dest
@@ -493,22 +567,22 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
             SetEntityCoords(crate, dest.x, dest.y, dest.z + Config.ObjectZOffset)
             PlaceObjectOnGroundProperly(crate)
 
-            if IsDisabledControlJustPressed(0, 99) then                        -- scroll wheel up just pressed
+            if IsDisabledControlJustPressed(0, 99) then -- scroll wheel up just pressed
                 local delta = IsDisabledControlPressed(0, 36) and 0.5 or
-                5                                                              -- Adjust heading change amount based on whether Ctrl is held down
+                    5                                   -- Adjust heading change amount based on whether Ctrl is held down
                 heading = heading + delta
                 if heading > 360 then heading = 0.0 end
             end
-            if IsDisabledControlJustPressed(0, 81) then                        -- scroll wheel down just pressed
+            if IsDisabledControlJustPressed(0, 81) then -- scroll wheel down just pressed
                 local delta = IsDisabledControlPressed(0, 36) and 0.5 or
-                5                                                              -- Adjust heading change amount based on whether Ctrl is held down
+                    5                                   -- Adjust heading change amount based on whether Ctrl is held down
                 heading = heading - delta
                 if heading < 0 then heading = 360.0 end
             end
             SetEntityHeading(crate, heading)
 
             if IsControlJustPressed(0, 38) then
-                plantedcrate = true
+                plantedCrate = true
                 exports['qb-core']:KeyPressed(38)
                 DeleteObject(crate)
                 local ped = PlayerPedId()
@@ -529,16 +603,17 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
                     disableMouse = false,
                     disableCombat = true,
                 }, {}, {}, {}, function()
-                    TriggerServerEvent('synccrate:server:CreateNewCrate', dest, heading, crate, ModelHash, crateInventory)
-                    plantedcrate = false
-                    CratePlace = false
+                    --TriggerServerEvent('qb-objectsync:server:CreateNewCrate', dest, heading, crate, ModelHash, crateInventory)
+                    PlaceCrate(dest, heading, crate, ModelHash)
+                    plantedCrate = false
+                    cratePlace = false
                     ClearPedTasks(ped)
                     RemoveAnimDict('amb@medic@standing@kneel@base')
                     RemoveAnimDict('anim@gangops@facility@servers@bodysearch@')
                 end, function()
                     QBCore.Functions.Notify("_U('canceled')", 'error', 2500)
-                    plantedcrate = false
-                    CratePlace = false
+                    plantedCrate = false
+                    cratePlace = false
                     ClearPedTasks(ped)
                     RemoveAnimDict('amb@medic@standing@kneel@base')
                     RemoveAnimDict('anim@gangops@facility@servers@bodysearch@')
@@ -547,8 +622,8 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
             -- [G] to cancel
             if IsControlJustPressed(0, 47) then
                 exports['qb-core']:KeyPressed(47)
-                plantedcrate = false
-                CratePlace = false
+                plantedCrate = false
+                cratePlace = false
                 DeleteObject(crate)
                 return
             end
@@ -557,7 +632,7 @@ RegisterNetEvent('synccrate:client:PlaceCreate', function(ModelHash)
 end)
 
 -- Event for opening the crate
-RegisterNetEvent('synccrate:client:open', function(zavolano, crate, difficulty)
+RegisterNetEvent('qb-objectsync:client:open', function(zavolano, crate, difficulty)
     QBCore.Functions.Progressbar("looti", "Searching crate", math.random(1000, 2000), false, true, {
         disableMovement = true,
         disableCarMovement = true,
@@ -571,14 +646,14 @@ RegisterNetEvent('synccrate:client:open', function(zavolano, crate, difficulty)
         if crate and DoesEntityExist(crate) then -- Check for existence of crate
             exports['ps-ui']:Circle(function(success)
                 if success then
-                    TriggerServerEvent('synccrate:server:CrateItem', ObjToNet(crate))
-                    TriggerServerEvent("synccrate:server:removeTarget", ObjToNet(crate))
+                    TriggerServerEvent('qb-objectsync:server:CrateItem', ObjToNet(crate))
+                    TriggerServerEvent("qb-objectsync:server:removeTarget", ObjToNet(crate))
                     StopAnimTask(PlayerPedId(), "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer",
                         1.0)
                 else
                     QBCore.Functions.Notify("Someone was faster", "error")
                 end
-           -- end, 1, 15) -- NumberOfCircles, MS
+                -- end, 1, 15) -- NumberOfCircles, MS
             end, Config.Difficulty[difficulty].circles, Config.Difficulty[difficulty].seconds) -- NumberOfCircles, MS
             StopAnimTask(PlayerPedId(), "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer", 1.0)
         else
@@ -594,7 +669,7 @@ RegisterNetEvent('synccrate:client:open', function(zavolano, crate, difficulty)
 end)
 
 -- Event for removing the crate
-RegisterNetEvent('synccrate:client:Remove', function(zavolano, crate)
+RegisterNetEvent('qb-objectsync:client:Remove', function(zavolano, crate)
     QBCore.Functions.Progressbar("looti", "Searching crate", math.random(1500, 2500), false, true, {
         disableMovement = true,
         disableCarMovement = true,
@@ -620,26 +695,10 @@ RegisterNetEvent('synccrate:client:Remove', function(zavolano, crate)
     end)
 end)
 
--- Event for syncing the crate from server to clients
-RegisterNetEvent('synccrate:client', function(coords, heading, crate, ModelHash, crateItems)
-    -- local ModelHash = "ba_prop_battle_crates_rifles_01a"
-    local crateEntity = CreateObject(ModelHash, coords.x, coords.y, coords.z + Config.ObjectZOffset, true, true, false)
-    FreezeEntityPosition(crateEntity, true)
-    SetEntityHeading(crateEntity, heading)
-    local crateNet = ObjToNet(crateEntity)
 
-    SetNetworkIdCanMigrate(crateNet, true)
-    SetNetworkIdExistsOnAllMachines(crateNet, true)
-    PlaceObjectOnGroundProperly(crateEntity)
-    TriggerServerEvent("synccrate:server:showTarget", crateNet, crateItems, crateDifficulty)
-
-    crateInventory = {}
-    crateObject = nil
-    crateDifficulty = nil
-end)
 
 -- Event for removing the target marker from clients
-RegisterNetEvent("synccrate:client:removeTarget", function(crate)
+RegisterNetEvent("qb-objectsync:client:removeTarget", function(crate)
     RemoveCrate(crate)
     if NetworkDoesEntityExistWithNetworkId(crate) then
         local entity = NetworkGetEntityFromNetworkId(crate)
@@ -648,23 +707,21 @@ RegisterNetEvent("synccrate:client:removeTarget", function(crate)
     end
 end)
 
-RegisterNetEvent('synccrate:client:addCrates', function(crates)
+RegisterNetEvent('qb-objectsync:client:addCrates', function(crates)
     for crate, difficulty in pairs(crates) do
         if not cratesCreated[crate] then
             cratesCreated[crate] = difficulty
-            debugPrint("Crate added to list: " .. crate .. " Difficulty: "..Config.Difficulty[difficulty].name)
+            debugPrint("Crate added to list: " .. crate .. " Difficulty: " .. Config.Difficulty[difficulty].name)
         end
     end
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerLoaded')
 AddEventHandler('QBCore:Client:OnPlayerLoaded', function()
-    TriggerServerEvent('synccrate:server:addCrates')
+    TriggerServerEvent('qb-objectsync:server:addCrates')
 end)
 
 RegisterNetEvent('QBCore:Client:OnPlayerUnload', function()
     targetsAdded = {}
     cratesCreated = {}
 end)
-
-
