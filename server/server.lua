@@ -37,7 +37,7 @@ RegisterNetEvent('qb-objectsync:server:CrateItem', function(crate)
                 TriggerClientEvent('inventory:client:ItemBox', src, QBCore.Shared.Items[item], "add", randomAmount)
                 Wait(500)
             end
-            if itemData.money.min >= 0 then
+            if itemData.money.min and itemData.money.min >= 0 then
                 local randomAmount = math.random(itemData.money.min, itemData.money.max)
                 player.Functions.AddMoney('cash', randomAmount)
                 TriggerClientEvent("QBCore:Notify", src, "You got " .. randomAmount .. " $", "success")
