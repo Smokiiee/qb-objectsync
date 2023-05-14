@@ -152,6 +152,56 @@ ObjectItems = function(category)
     end
 end
 
+
+PresetList = function()
+    local list = {}
+    list[#list + 1] = {
+        isMenuHeader = true,
+        header = "Select preset",
+        txt = "",
+    }
+    list[#list + 1] = {
+        header = "< Go Back",
+        txt = "Crate items",
+        params = {
+            isAction = true,
+            event = function()
+                CrateItems()
+            end,
+        },
+    }
+
+    for key, data in pairs(Config.Presets) do
+        local itemList = ""
+        for item, itemData in pairs(data.items) do
+            if itemList ~= "" then
+                itemList = itemList .. "\n"
+            end
+            itemList = itemList .. QBCore.Shared.Items[item].label .. " (Min: " .. itemData.min .. " - Max: " .. itemData.max .. ")<br>"
+        end
+
+        list[#list + 1] = {
+            header = data.name,
+            txt = itemList,
+            params = {
+                isAction = true,
+                event = function()
+                    for item, itemData in pairs(data.items) do
+                        crateInventory[item] = {
+                            amount = {
+                                min = itemData.min, 
+                                max = itemData.max
+                            }
+                        }
+                        CrateItems()
+                    end
+                end,
+            },
+        }
+    end
+    exports['qb-menu']:openMenu(list)
+end
+
 ObjectSelection = function()
     local list = {}
     list[#list + 1] = {
@@ -179,12 +229,28 @@ end
 CrateItems = function()
     local list = {}
     list[#list + 1] = {
+        isMenuHeader = true,
+        header = "Select items",
+        txt = "",
+    }
+
+    list[#list + 1] = {
         header = "< Go Back",
         txt = "Crate creation",
         params = {
             isAction = true,
             event = function()
                 CreateInventory()
+            end,
+        },
+    }
+    list[#list + 1] = {
+        header = "Add presets",
+        txt = 'Press here to select a preset!',
+        params = {
+            isAction = true,
+            event = function()
+                PresetList()
             end,
         },
     }
@@ -241,8 +307,8 @@ CreateInventory = function()
         txt = "",
     }
     list[#list + 1] = {
-        header = "Crate object",
-        txt = crateObject and tostring(Config.Objects[crateObject]) .. ' - ' .. crateObject or "Select object",
+        header = "Set crate",
+        txt = crateObject and tostring(Config.Objects[crateObject]) .. ' - ' .. crateObject or "Press here to set crate object",
         params = {
             isAction = true,
             event = function()
@@ -250,57 +316,57 @@ CreateInventory = function()
             end,
         },
     }
-    if crateObject then
-        list[#list + 1] = {
-            header = "Set difficulty",
-            txt = crateDifficulty and Config.Difficulty[crateDifficulty].name or "Press here to set difficulty",
-            params = {
-                isAction = true,
-                event = function()
-                    SetDifficulty()
-                end,
-            },
-        }
-    end
-    if crateObject and crateDifficulty then
-        list[#list + 1] = {
-            header = "Add money",
-            txt = next(crateMoney) and 'Min: ' .. crateMoney.min .. ' Max: ' .. crateMoney.max or
-            "Press here to add money",
-            params = {
-                isAction = true,
-                event = function()
-                    ObjectItems()
-                end,
-            },
-        }
+    
+    list[#list + 1] = {
+        header = "Set difficulty",
+        txt = crateDifficulty and Config.Difficulty[crateDifficulty].name or "Press here to set difficulty",
+        params = {
+            isAction = true,
+            event = function()
+                SetDifficulty()
+            end,
+        },
+    }
+    
+    list[#list + 1] = {
+        header = "Set items",
+        txt = next(crateInventory) ~= nil and 'Number of items added: ' .. #crateInventory or
+            (crateObject and crateDifficulty and 'Press here to add items to the crate!' or 'Missing requirements: Object and/or difficulty'),
+        disabled = crateObject == nil or crateDifficulty == nil,
+        params = {
+            isAction = true,
+            event = function()
+                CrateItems()
+            end,
+        },
+    }
 
+    list[#list + 1] = {
+        header = "Set money",
+        txt = next(crateMoney) and 'Min: ' .. crateMoney.min .. ' Max: ' .. crateMoney.max or
+            (crateObject and crateDifficulty and "Press here to add money" or 'Missing requirements: Object and/or difficulty'),
+        disabled = crateObject == nil or crateDifficulty == nil,
+        params = {
+            isAction = true,
+            event = function()
+                ObjectItems()
+            end,
+        },
+    }
 
-        list[#list + 1] = {
-            header = "Items",
-            txt = next(crateInventory) ~= nil and 'Number of items added: ' .. #crateInventory or
-            'Press here to add items to the crate!',
-            params = {
-                isAction = true,
-                event = function()
-                    CrateItems()
-                end,
-            },
-        }
+    list[#list + 1] = {
+        header = "Confirm",
+        txt = (next(crateInventory) ~= nil or next(crateMoney) ~= nil) and 'Press here to place the crate!' or
+            'Missing requirements: Items or money',
+        disabled = crateObject == nil or crateDifficulty == nil or (next(crateInventory) == nil and next(crateMoney) == nil),
+        params = {
+            isAction = true,
+            event = function()
+                TriggerEvent('qb-objectsync:client:PlaceCrate', crateObject)
+            end,
+        },
+    }
 
-        if next(crateInventory) ~= nil or next(crateMoney) ~= nil and crateDifficulty ~= nil then
-            list[#list + 1] = {
-                header = "Confirm",
-                txt = 'Press here to place the crate!',
-                params = {
-                    isAction = true,
-                    event = function()
-                        TriggerEvent('qb-objectsync:client:PlaceCrate', crateObject)
-                    end,
-                },
-            }
-        end
-    end
     exports['qb-menu']:openMenu(list)
 end
 
@@ -352,7 +418,7 @@ EditItem = function(item)
                         isAction = true,
                         event = function()
                             crateInventory[item] = nil
-                            CreateInventory()
+                            CrateItems()
                         end,
                     },
                 }
@@ -361,7 +427,7 @@ EditItem = function(item)
                     params = {
                         isAction = true,
                         event = function()
-                            CreateInventory()
+                            CrateItems()
                         end,
                     },
                 }

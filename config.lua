@@ -35,6 +35,34 @@ Config.Difficulty = {
 
 }
 
+Config.Presets = {
+    [1] = {
+        name = 'Random stuffs',
+        items = {
+            ['water_bottle'] = {min = 1, max = 5},
+            ['joint'] = {min = 1, max = 5},
+            ['beer'] = {min = 1, max = 5},
+        }
+    },
+    [2] = {
+        name = 'Random stuffs 2',
+        items = {
+            ['water_bottle'] = {min = 1, max = 5},
+            ['joint'] = {min = 1, max = 5},
+            ['beer'] = {min = 1, max = 5},
+        }
+    },
+    [3] = {
+        name = 'Random stuffs 3',
+        items = {
+            ['water_bottle'] = {min = 1, max = 5},
+            ['joint'] = {min = 1, max = 5},
+            ['beer'] = {min = 1, max = 5},
+        }
+    },
+
+}
+
 Config.Objects = {
     ['prop_tool_box_06'] = 'Tool box 6',
     ['prop_tool_box_05'] = 'Tool box 5', 
