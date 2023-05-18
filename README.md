@@ -5,7 +5,10 @@ test resource for creating props that have qb-target
 this was made with qb-core framwork 
 
 
-# **Remember this is a WIP**
+# **Remember this is a WIP & first release a collab with MrAlfredd**
+
+# **Thanks to @MrAlfredd for all the help and Collab**
+
 
 # Dependencies
 
