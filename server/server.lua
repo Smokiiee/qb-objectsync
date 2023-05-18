@@ -11,7 +11,6 @@ end)
 
 RegisterNetEvent("qb-objectsync:server:showTarget", function(crate, items, difficulty, money)
     cratesCreated[crate] = difficulty
-    --cratesCreated[crate] = true
     crateItems[crate] = {
         items = items,
         money = money

@@ -1,8 +1,9 @@
 fx_version 'cerulean'
 game 'gta5'
 
-description 'testresource'
-version '0.0.2'
+description 'qb-objectsync'
+
+version '1.0.0'
 
 shared_scripts {
 	'config.lua'
