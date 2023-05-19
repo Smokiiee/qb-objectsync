@@ -5,9 +5,6 @@ Config.Debug = false -- <----- Use this only if you need to troubleshooting
 Config.rayCastingDistance = 50.0
 Config.ObjectZOffset = - 0.5
 
--- Config.RandomWeapon = math.random(2, 4) 
--- Config.RandomAmmo = math.random(5, 15)
-
 Config.HasCrateAccsess = {
     ["citizen id here"] = true, -- <----- character citizen id If set to true the citizen id have accsess
     ["citizen id here"] = true,
@@ -30,10 +27,7 @@ Config.Difficulty = {
         name = 'Hard',
         circles = 3,
         seconds= 5,
-    }
-    
-    
-
+    } 
 }
 
 Config.Presets = {
@@ -65,6 +59,7 @@ Config.Presets = {
 }
 
 Config.Objects = {
+    ['ba_prop_battle_crates_rifles_01a'] = 'Battle Crate',
     ['prop_tool_box_06'] = 'Tool box 6',
     ['prop_tool_box_05'] = 'Tool box 5', 
 }
@@ -77,10 +72,9 @@ Config.IgnoreItems = {
     ['visa'] = true,
     ['mastercard'] = true,
     --['weapon_unarmed'] = true,
-  
 }
 
--- function to handle debug prints
+-- Function to handle debug prints
 debugPrint = function(text)
     if Config.Debug then
         tPrint(text, 0)

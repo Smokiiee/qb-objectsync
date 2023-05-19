@@ -39,9 +39,6 @@ CheckSurface = function()
 end
 
 --- Object Creation START ---
---- Object Creation START ---
---- Object Creation START ---
-
 ObjectItems = function(category)
     local inputFields = {}
 
@@ -131,7 +128,6 @@ ObjectItems = function(category)
             QBCore.Functions.Notify("Maximum amount can't be lower than minimum amount.", "error")
 
             ObjectItems(category)
-
             return
         end
         if category then
@@ -151,7 +147,6 @@ ObjectItems = function(category)
         end
     end
 end
-
 
 PresetList = function()
     local list = {}
@@ -233,7 +228,6 @@ CrateItems = function()
         header = "Select items",
         txt = "",
     }
-
     list[#list + 1] = {
         header = "< Go Back",
         txt = "Crate creation",
@@ -316,7 +310,6 @@ CreateInventory = function()
             end,
         },
     }
-    
     list[#list + 1] = {
         header = "Set difficulty",
         txt = crateDifficulty and Config.Difficulty[crateDifficulty].name or "Press here to set difficulty",
@@ -327,7 +320,6 @@ CreateInventory = function()
             end,
         },
     }
-    
     list[#list + 1] = {
         header = "Set items",
         txt = next(crateInventory) ~= nil and 'Number of items added: ' .. #crateInventory or
@@ -340,7 +332,6 @@ CreateInventory = function()
             end,
         },
     }
-
     list[#list + 1] = {
         header = "Set money",
         txt = next(crateMoney) and 'Min: ' .. crateMoney.min .. ' Max: ' .. crateMoney.max or
@@ -353,7 +344,6 @@ CreateInventory = function()
             end,
         },
     }
-
     list[#list + 1] = {
         header = "Confirm",
         txt = (next(crateInventory) ~= nil or next(crateMoney) ~= nil) and 'Press here to place the crate!' or
@@ -366,7 +356,6 @@ CreateInventory = function()
             end,
         },
     }
-
     exports['qb-menu']:openMenu(list)
 end
 
@@ -491,7 +480,6 @@ EditAmount = function(item)
     end
 end
 
-
 PlaceCrate = function(coords, heading, crate, ModelHash)
     -- local ModelHash = "ba_prop_battle_crates_rifles_01a"
     local crateEntity = CreateObject(ModelHash, coords.x, coords.y, coords.z + Config.ObjectZOffset, true, true, false)
@@ -510,11 +498,8 @@ PlaceCrate = function(coords, heading, crate, ModelHash)
     crateMoney = {}
 end
 --- Object Creation END ---
---- Object Creation END ---
---- Object Creation END ---
 
 -- Check if the player has access to the crate
-
 CrateUser = function()
     local PlayerData = QBCore.Functions.GetPlayerData()
     local citizenid = PlayerData.citizenid
@@ -551,19 +536,14 @@ end
 
 -- Spawn a crate object and sync it to the server
 RegisterCommand("MakeCrate", function(source, args)
-    local ModelHash = args[1] -- first argument after the command is the model hash
-    if ModelHash then
-        TriggerServerEvent('qb-objectsync:server:RegisterCommand', ModelHash)
-    else
-        CreateInventory()
-    end
+    CreateInventory()
 end)
 
 Citizen.CreateThread(function()
     while true do
         -- loop through the cratesCreated table to find and add the target
         for crate, difficulty in pairs(cratesCreated) do
-            -- check if the crate has already been added
+            -- Check if the crate has already been added
             if not targetsAdded[crate] and NetworkDoesEntityExistWithNetworkId(crate) then
                 debugPrint("Adding target for crate: " .. crate)
                 local entity = NetworkGetEntityFromNetworkId(crate)
@@ -593,7 +573,7 @@ Citizen.CreateThread(function()
                 targetsAdded[crate] = true -- mark the crate as added
             end
         end
-        Citizen.Wait(2500) -- wait 5 seconds before checking again
+        Citizen.Wait(2500) -- wait 2.5 seconds before checking again
     end
 end)
 
@@ -602,9 +582,6 @@ Citizen.CreateThread(function()
         { name = "Model Hash", help = "Model Hash" },
     })
 end)
-
--- Event for syncing the crate from server to clients
-
 
 -- Event for placing crate
 RegisterNetEvent('qb-objectsync:client:PlaceCrate', function(ModelHash)
@@ -669,7 +646,6 @@ RegisterNetEvent('qb-objectsync:client:PlaceCrate', function(ModelHash)
                     disableMouse = false,
                     disableCombat = true,
                 }, {}, {}, {}, function()
-                    --TriggerServerEvent('qb-objectsync:server:CreateNewCrate', dest, heading, crate, ModelHash, crateInventory)
                     PlaceCrate(dest, heading, crate, ModelHash)
                     plantedCrate = false
                     cratePlace = false
@@ -708,7 +684,7 @@ RegisterNetEvent('qb-objectsync:client:open', function(zavolano, crate, difficul
         animDict = "anim@amb@clubhouse@tutorial@bkr_tut_ig3@",
         anim = "machinic_loop_mechandplayer",
         flags = 16,
-    }, {}, {}, function()                        -- Done
+    }, {}, {}, function()                        -- Done 
         if crate and DoesEntityExist(crate) then -- Check for existence of crate
             exports['ps-ui']:Circle(function(success)
                 if success then
@@ -719,7 +695,6 @@ RegisterNetEvent('qb-objectsync:client:open', function(zavolano, crate, difficul
                 else
                     QBCore.Functions.Notify("Someone was faster", "error")
                 end
-                -- end, 1, 15) -- NumberOfCircles, MS
             end, Config.Difficulty[difficulty].circles, Config.Difficulty[difficulty].seconds) -- NumberOfCircles, MS
             StopAnimTask(PlayerPedId(), "anim@amb@clubhouse@tutorial@bkr_tut_ig3@", "machinic_loop_mechandplayer", 1.0)
         else
@@ -760,8 +735,6 @@ RegisterNetEvent('qb-objectsync:client:Remove', function(zavolano, crate)
         QBCore.Functions.Notify("He stopped looking at it", "error")
     end)
 end)
-
-
 
 -- Event for removing the target marker from clients
 RegisterNetEvent("qb-objectsync:client:removeTarget", function(crate)
