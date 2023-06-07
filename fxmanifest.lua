@@ -3,7 +3,9 @@ game 'gta5'
 
 description 'qb-objectsync'
 
-version '1.0.0'
+author 'Smokiiee & MrAlfredd'
+
+version '1.0.1'
 
 shared_scripts {
 	'config.lua'

@@ -6,26 +6,26 @@ Config.rayCastingDistance = 50.0
 Config.ObjectZOffset = - 0.5
 
 Config.HasCrateAccsess = {
-    ["citizen id here"] = true, -- <----- character citizen id If set to true the citizen id have accsess
-    ["citizen id here"] = true,
-    ["citizen id here"] = false,-- <----- If set to false the citizen id do not have accsess
+    ["Citizen ID Here"] = true, -- <----- character citizen id If set to true the citizen id have accsess
+    ["Citizen ID Here"] = true,
+    ["Citizen ID Here"] = false,-- <----- If set to false the citizen id do not have accsess
     
 }
 
 Config.Difficulty = {
     [1] = {
         name = 'Easy',
-        circles = 1,
-        seconds= 15,
+        circles = 3,
+        seconds= 20,
     },
     [2] = {
         name = 'Medium',
-        circles = 2,
+        circles = 6,
         seconds= 10,
     },
     [3] = {
         name = 'Hard',
-        circles = 3,
+        circles = 12,
         seconds= 5,
     } 
 }
@@ -34,9 +34,9 @@ Config.Presets = {
     [1] = {
         name = 'Random stuffs',
         items = {
-            ['water_bottle'] = {min = 1, max = 5},
-            ['joint'] = {min = 1, max = 5},
-            ['beer'] = {min = 1, max = 5},
+            ['water_bottle'] = {min = 1, max = 5}, -- <----- Change this to add different items in presets
+            ['joint'] = {min = 1, max = 5}, -- <----- 
+            ['beer'] = {min = 1, max = 5}, -- <----- 
         }
     },
     [2] = {
@@ -59,7 +59,7 @@ Config.Presets = {
 }
 
 Config.Objects = {
-    ['ba_prop_battle_crates_rifles_01a'] = 'Battle Crate',
+    ['ba_prop_battle_crates_rifles_01a'] = 'Battle Crate', -- <----- Change this to make new objects to spawn
     ['prop_tool_box_06'] = 'Tool box 6',
     ['prop_tool_box_05'] = 'Tool box 5', 
 }
